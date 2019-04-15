@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Core\Annotation\ApiResource;
 
@@ -40,9 +42,27 @@ class BlogPost
     private $author;
 
     /**
+     * @ORM\OneToMany(targetEntity="App\Entity\Comment", mappedBy="blogPost")
+     */
+    private $comments;
+
+    /**
      * @ORM\Column(type="string", length=255)
      */
     private $slug;
+
+    public function __construct()
+    {
+        $this->comments = new ArrayCollection();
+    }
+
+    /**
+     * @return Collection
+     */
+    public function getComments(): Collection
+    {
+        return $this->comments;
+    }
 
     public function getId(): ?int
     {
