@@ -3,14 +3,25 @@
 namespace App\Entity;
 
 use ApiPlatform\Core\Annotation\ApiResource;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 /**
- * @ApiResource()
+ * @ApiResource(
+ * itemOperations={"get"},
+ * collectionOperations={"post"},
+ * normalizationContext={
+ *  "groups"={"read"}
+ * }
+ * )
  * @ORM\Entity(repositoryClass="App\Repository\UserRepository")
+ * @UniqueEntity(fields={"username"})
+ * @UniqueEntity(fields={"email"})
  */
 class User implements UserInterface
 {
@@ -18,36 +29,58 @@ class User implements UserInterface
      * @ORM\Id()
      * @ORM\GeneratedValue()
      * @ORM\Column(type="integer")
+     * @Groups({"read"})
      */
     private $id;
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Groups({"read"})
+     * @Assert\NotBlank()
+     * @Assert\Length(min=4, max=255)
      */
     private $username;
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank()
+     * @Assert\Length(min=6, max=255)
      */
     private $password;
 
     /**
+     * @Assert\Expression(
+     *  "this.getPassword() === this.getRetypedPassword()",
+     *  message="Passwords do not match"
+     * )
+     */
+    private $retypedPassword;
+
+    /**
      * @ORM\Column(type="string", length=255)
+     * @Groups({"read"})
+     * @Assert\NotBlank()
+     * @Assert\NotBlank()
      */
     private $name;
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * @Assert\NotBlank()
+     * @Assert\Email()
+     * @Assert\NotBlank()
      */
     private $email;
 
     /**
      * @ORM\OneToMany(targetEntity="App\Entity\BlogPost", mappedBy="author")
+     * @Groups({"read"})
      */
     private $posts;
 
     /**
      * @ORM\OneToMany(targetEntity="App\Entity\Comment", mappedBy="author")
+     * @Groups({"read"})
      */
     private $comments;
 
@@ -55,6 +88,17 @@ class User implements UserInterface
     {
         $this->posts = new ArrayCollection();
         $this->comments = new ArrayCollection();
+    }
+
+    public function getRetypedPassword()
+    {
+        return $this->retypedPassword;
+    }
+
+    public function setRetypedPassword(string $password)
+    {
+        $this->retypedPassword = $password;
+        return $this;
     }
 
     public function getId(): ?int
