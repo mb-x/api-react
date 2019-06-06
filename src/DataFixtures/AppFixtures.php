@@ -13,6 +13,27 @@ use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 class AppFixtures extends Fixture
 {
 
+    const USERS = [
+        [
+            'username' => 'admin',
+            'email' => 'mbengrich@manymore.fr',
+            'name' => 'Mohammed',
+            'password' => 'secret123',
+        ],
+        [
+            'username' => 'test1',
+            'email' => 'test1@test.fr',
+            'name' => 'Mohammed',
+            'password' => 'secret123',
+        ],
+        [
+            'username' => 'test2',
+            'email' => 'test2@test.fr',
+            'name' => 'Mohammed',
+            'password' => 'secret123',
+        ]
+    ];
+
     private $passwordEncoder;
 
     private $faker;
@@ -32,8 +53,7 @@ class AppFixtures extends Fixture
 
     protected function loadBlogPosts(ObjectManager $manager)
     {
-        $user = $this->getReference('admin');
-
+        $usersCount = count(self::USERS) - 1;
         for ($i = 0; $i < 100; $i++) {
             $blogPost = new BlogPost();
             $blogPost
@@ -41,7 +61,7 @@ class AppFixtures extends Fixture
                 ->setPublished($this->faker->dateTimeThisYear)
                 ->setContent($this->faker->realText())
                 ->setSlug($this->faker->slug)
-                ->setAuthor($user)
+                ->setAuthor($this->getRandomUserReference($usersCount))
             ;
             $this->setReference("blog_post_$i", $blogPost);
             $manager->persist($blogPost);
@@ -52,15 +72,14 @@ class AppFixtures extends Fixture
 
     protected function loadComments(ObjectManager $manager)
     {
-        $user = $this->getReference('admin');
-
+        $usersCount = count(self::USERS) - 1;
         for ($i = 0; $i < 100; $i++) {
             for ($j = 0; $j < rand(1, 10); $j++) {
                 $comment = new Comment();
                 $comment
                     ->setPublished($this->faker->dateTimeThisYear)
                     ->setContent($this->faker->realText())
-                    ->setAuthor($user)
+                    ->setAuthor($this->getRandomUserReference($usersCount))
                     ->setBlogPost($this->getReference("blog_post_$i"))
                 ;
                 $manager->persist($comment);
@@ -70,22 +89,28 @@ class AppFixtures extends Fixture
         $manager->flush();
     }
 
+    public function getRandomUserReference(int $max)
+    {
+        return $this->getReference('user_'.self::USERS[rand(0, $max)]['username']);
+    }
+
     protected function loadUsers(ObjectManager $manager)
     {
-        $user = new User();
-        $user
-            ->setUsername('admin')
-            ->setEmail('mbengrich@manymore.fr')
-            ->setName('Mohammed')
-            ->setPassword(
-                $this->passwordEncoder->encodePassword($user, 'secret123')
-            )
-        ;
+        foreach (self::USERS as $u) {
+            $user = new User();
+            $user
+                ->setUsername($u['username'])
+                ->setEmail($u['email'])
+                ->setName($u['name'])
+                ->setPassword(
+                    $this->passwordEncoder->encodePassword($user, $u['password'])
+                )
+            ;
 
-        $this->addReference('admin', $user);
+            $this->addReference('user_' . $u['username'], $user);
 
-        $manager->persist($user);
-
+            $manager->persist($user);
+        }
 
         $manager->flush();
     }
